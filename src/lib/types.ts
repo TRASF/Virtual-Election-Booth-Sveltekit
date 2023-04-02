@@ -10,6 +10,7 @@ export interface UserLogIn{
 
 export interface Candidate {
   id: number;
-  name: string;
   votes: number;
+  name: string;
+  voteParty: string;
 }
