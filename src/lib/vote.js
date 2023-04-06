@@ -1,6 +1,5 @@
 import { firestore } from '$lib/firebaseConfig';
-import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
-import { user } from './stores';
+import { doc, updateDoc, increment } from 'firebase/firestore';
 
 /**
  * @param {string} candidateId

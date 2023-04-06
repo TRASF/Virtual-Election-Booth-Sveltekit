@@ -9,75 +9,85 @@
 		getDocs,
 		doc,
 		setDoc,
-		where
+		updateDoc,
 	} from 'firebase/firestore';
 	import { firestore } from '$lib/firebaseConfig';
 	import { onMount } from 'svelte';
 	import { getCandidates } from '$lib/getCandidates';
 	import { incrementCandidateVote, setUserHasVoted } from '$lib/vote';
+	import { calculateHash } from '$lib/calculatedHash';
 
 	let candidates: any[] = [];
 	let selectedCandidate: any[] = [];
 
 	async function submitVote(_uid: string, _selectedCandidate: any | string) {
-		if (!selectedCandidate) return;
+  if (!selectedCandidate) return;
 
-		const votesRef = collection(firestore, 'votes');
+  const votesRef = collection(firestore, 'votes');
+  const votesQuery = query(
+    collection(firestore, 'votes'),
+    orderBy('timestamp', 'desc'),
+    limit(1)
+  );
 
-		const userVoteQuery = query(
-			votesRef,
-			where('userId', '==', _uid),
-			where('votedFor', '==', _selectedCandidate.id)
-		);
-		const userVoteParty = query(
-			votesRef,
-			where('userId', '==', _uid),
-			where('voteParty', '==', _selectedCandidate.voteParty)
-		);
-		const votesQuery = query(
-			collection(firestore, 'votes'),
-			orderBy('timestamp', 'desc'),
-			limit(1)
-		);
+  const votesSnapshot = await getDocs(votesQuery);
+  const latestVote = votesSnapshot.docs[0];
 
-		const userVotePartySnapshot = await getDocs(userVoteParty);
-		const userVoteCandidateSnapshot = await getDocs(userVoteQuery);
-		const votesSnapshot = await getDocs(votesQuery);
-		const latestVote = votesSnapshot.docs[0];
+  let duplicateVote = false;
 
-		const vote = {
-			userId: _uid,
-			votedFor: _selectedCandidate.id,
-			voteParty: _selectedCandidate.voteParty,
-			prevVoteId: latestVote ? latestVote.id : null,
-			timestamp: new Date().toISOString()
-		};
+  let currentVote: any | null = latestVote;
+  while (currentVote) {
+    const currentVoteData = currentVote.data();
+    if (currentVoteData.userId === _uid && (currentVoteData.votedFor === _selectedCandidate.id || currentVoteData.voteParty === _selectedCandidate.voteParty)) {
+      duplicateVote = true;
+      break;
+    }
+    const previousVoteId = currentVoteData.previousVoteId;
+    if (previousVoteId) {
+      currentVote = await getDoc(doc(firestore, 'votes', previousVoteId));
+    } else {
+      currentVote = null;
+    }
+  }
 
-		const voteRef = doc(
-			firestore,
-			'votes',
-			`${_selectedCandidate.voteParty}|${_selectedCandidate.id}_${_uid}`
-		);
+  if (duplicateVote) {
+    if (latestVote.data().votedFor === _selectedCandidate.id) {
+      alert('You have already voted for this candidate.');
+    } else {
+      alert('You have already voted for this party.');
+    }
+    return;
+  }
 
-		if (!userVoteCandidateSnapshot.empty) {
-			alert('You have already voted for this candidate.');
-			return;
-		}
-		if (!userVotePartySnapshot.empty) {
-			alert('You have already voted for this party.');
-			return;
-		}
+  const vote = {
+    userId: _uid,
+    votedFor: _selectedCandidate.id,
+    voteParty: _selectedCandidate.voteParty,
+    previousVoteId: latestVote ? latestVote.id : null,
+    timestamp: new Date().toISOString(),
+    hash: '',
+    previousHash: latestVote ? latestVote.data().hash : null
+  };
 
-		try {
-			await setDoc(voteRef, vote);
-			await incrementCandidateVote(_selectedCandidate.id);
-			await setUserHasVoted(_uid, _selectedCandidate);
-			alert('Vote submitted successfully!');
-		} catch (error: any) {
-			console.error('Error submitting vote:', error.message);
-			alert('An error occurred while submitting your vote. Please try again.');
-		}
-	}
+  const voteRef = doc(
+    firestore,
+    'votes',
+    `${_selectedCandidate.voteParty}|${_selectedCandidate.id}_${_uid}`
+  );
+  const userDocRef = doc(firestore, 'voteParties', `${_selectedCandidate.voteParty}`);
+  try {
+	  vote.hash = calculateHash(vote);
+      await updateDoc(userDocRef, { updatedAt: new Date() });
+    await setDoc(voteRef, vote);
+    await incrementCandidateVote(_selectedCandidate.id);
+    await setUserHasVoted(_uid, _selectedCandidate);
+    alert('Vote submitted successfully!');
+  } catch (error: any) {
+    console.error('Error submitting vote:', error.message);
+    alert('An error occurred while submitting your vote. Please try again.');
+  }
+}
+
 
 	async function handleVoteSubmit() {
 		if (!selectedCandidate) {
@@ -112,7 +122,7 @@
 	<fieldset>
 		<legend>Select a candidate:</legend>
 		{#each candidates as candidate (candidate.id)}
-			<div>{candidate.toISOString}</div>
+			<div>{candidate.id}</div>
 			<div>
 				<input
 					type="radio"
