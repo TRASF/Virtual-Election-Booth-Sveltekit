@@ -1,6 +1,7 @@
 // src/lib/addCandidate.js
 import { firestore } from '$lib/firebaseConfig';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
+import { user } from './stores';
 
 /**
  * @param {any} candidateData
@@ -9,11 +10,22 @@ export async function addCandidate(candidateData) {
   let candidate = {
     name: candidateData.name,
     votes: 0,
-    voteParty: candidateData.voteParty
+    voteParty: ''
   }
+
   try {
-    const docRef = await addDoc(collection(firestore, 'candidates'), candidate);
-    console.log('Document written with ID:', docRef.id);
+    const candidateDocRef = await addDoc(collection(firestore, 'candidates'), candidate);
+
+    let voteParty = {
+      uid: candidateDocRef.id,
+    }
+
+    const votePartyDocRef = await addDoc(collection(firestore, 'voteParties'), voteParty);
+    
+    candidate.voteParty = votePartyDocRef.id;
+    await updateDoc(doc(firestore, 'candidates', candidateDocRef.id), {
+      voteParty: votePartyDocRef.id
+    });
   } catch (error) {
     console.error('Error adding document:', error);
   }
