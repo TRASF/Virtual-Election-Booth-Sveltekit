@@ -9,6 +9,7 @@
 		await addCandidate({ name: candidateName, voteParty: candidateParty });
 		candidateName = '';
 		candidateParty = '';
+		alert('Created successfully')
 	}
 </script>
 

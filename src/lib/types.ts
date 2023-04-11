@@ -13,4 +13,4 @@ export interface Candidate {
   votes: number;
   name: string;
   voteParty: string;
-}
+} 

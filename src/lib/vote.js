@@ -1,5 +1,5 @@
 import { firestore } from '$lib/firebaseConfig';
-import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
+import { doc, updateDoc, increment } from 'firebase/firestore';
 
 /**
  * @param {string} candidateId
@@ -15,11 +15,11 @@ export async function incrementCandidateVote(candidateId) {
   }
   /**
  * @param {string} userId
- * @param {any} candidateId
+ * @param {any} candidate
  */
-  export async function setUserHasVoted(userId, candidateId) {
+  export async function setUserHasVoted(userId, candidate) {
     try {
-      const userDocRef = doc(firestore, 'votes', `${userId}_${candidateId}`);
+      const userDocRef = doc(firestore, 'votes', `${candidate.voteParty}|${candidate.id}_${userId}`);
       await updateDoc(userDocRef, { hasVoted: true });
       console.log('User vote status updated');
     } catch (error) {
