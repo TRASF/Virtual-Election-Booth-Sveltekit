@@ -2,7 +2,8 @@
     import { auth } from '$lib/firebaseConfig';
     import { createUserWithEmailAndPassword } from 'firebase/auth';
     import { goto } from '$app/navigation';
-  
+    
+    let IdentificationID = ''
     let email = '';
     let password = '';
     let confirmPassword = '';
@@ -30,6 +31,11 @@
     <p class="error">{errorMessage}</p>
   {/if}
   <form on:submit|preventDefault={register}>
+    <!-- <label>
+      IdentificationID:
+      <input type="text" bind:value={IdentificationID} required />
+    </label>
+     -->
     <label>
       Email:
       <input type="email" bind:value={email} required />
