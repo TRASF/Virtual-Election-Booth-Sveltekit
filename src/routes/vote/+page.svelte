@@ -15,7 +15,7 @@
 	import { firestore } from '$lib/firebaseConfig';
 	import { onMount } from 'svelte';
 	import { getCandidates } from '$lib/getCandidates';
-	import { incrementCandidateVote, setUserHasVoted } from '$lib/vote';
+	import { incrementCandidateVote, setUserHasVoted } from '$lib/voteHepler';
 	import { calculateHash } from '$lib/calculatedHash';
 	import PrivateRoute from '$lib/components/PrivateRoute.svelte';
 
