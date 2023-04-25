@@ -4,22 +4,26 @@
   import user from '$lib/stores/users';
   import { onDestroy } from 'svelte';
   
-    let unsubscribe: () => void;
-  
-    onMount(async () => {
-      unsubscribe = user.subscribe(($user) => {
-        if (!$user) {
-          goto('/login');
-        }
-      });
-    });
-  
-    onDestroy(() => {
-      if (unsubscribe) {
-        unsubscribe();
+  let unsubscribe: () => void;
+  let isLoading = true;
+
+  onMount(async () => {
+    unsubscribe = user.subscribe(($user) => {
+      isLoading = false;
+      if (!$user) {
+        goto('/login');
       }
     });
-  </script>
-  
+  });
+
+  onDestroy(() => {
+    if (unsubscribe) {
+      unsubscribe();
+    }
+  });
+</script>
+
+{#if !isLoading}
   <slot />
-  
+{/if}
+

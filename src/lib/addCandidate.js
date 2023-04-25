@@ -8,12 +8,12 @@ import sha256 from 'crypto-js/sha256';
  */
 export async function addCandidate(candidateData) {
   let candidate = {
-    name: candidateData.name,
-    votes: 0,
-    voteParty: '',
+    hash: '',
     previousHash: '',
+    name: candidateData.name,
+    party: '',
+    votes: 0,
     createdAt: new Date(),
-    hash: ''
   };
 
   try {
@@ -38,31 +38,31 @@ export async function addCandidate(candidateData) {
     const candidateDocRef = await addDoc(collection(firestore, 'candidates'), candidate);
 
     const votePartiesRef = collection(firestore, 'voteParties');
-    const votePartyQuery = query(votePartiesRef, where('partyName', '==', candidateData.voteParty));
+    const votePartyQuery = query(votePartiesRef, where('Name', '==', candidateData.voteParty));
     const votePartySnapshot = await getDocs(votePartyQuery);
     let votePartyDocRef;
 
     if (votePartySnapshot.empty) {
       // If it doesn't exist, create a new voteParty document
       let voteParty = {
-        candidate: candidateDocRef.id,
+        candidates: [candidateDocRef.id],
+        Name: candidateData.voteParty,
+        create: new Date(),
+        update: new Date() ,
         votes: 0,
-        partyName: candidateData.voteParty,
-        createdAt: new Date(),
-        updateAt: new Date() 
       }
 
       votePartyDocRef = await addDoc(collection(firestore, 'voteParties'), voteParty);
     } else {
       // If it exists, get the reference to the existing document
       votePartyDocRef = votePartySnapshot.docs[0].ref;
-      await updateDoc(votePartyDocRef, { updateAt: new Date() });
+      await updateDoc(votePartyDocRef, { candidates: [...votePartySnapshot.docs[0].data().candidates, candidateDocRef.id ], update: new Date() });
 
     }
 
-    candidate.voteParty = votePartyDocRef.id;
+    candidate.party = votePartyDocRef.id;
     await updateDoc(doc(firestore, 'candidates', candidateDocRef.id), {
-      voteParty: votePartyDocRef.id,
+      party: votePartyDocRef.id,
     });
   } catch (error) {
     console.error('Error adding document:', error);
