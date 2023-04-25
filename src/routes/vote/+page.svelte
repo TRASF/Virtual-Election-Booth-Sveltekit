@@ -117,30 +117,117 @@
 		}
 	}
 
+	let parties: any[] = [];
+
+	async function fetchPartiesAndCandidates() {
+		const partiesSnapshot = await getDocs(collection(firestore, 'voteParties'));
+		parties = partiesSnapshot.docs.map((partyDoc) => {
+			const partyData = partyDoc.data();
+			return {
+				id: partyDoc.id,
+				name: partyData.Name,
+				candidates: partyData.candidates.map((candidateId: any) => candidates.find((candidate) => candidate.id === candidateId)),
+				votes: partyData.votes,
+			};
+		});
+	}
+
 	onMount(async () => {
 		candidates = await getCandidates();
+		await fetchPartiesAndCandidates();
+
 	});
 </script>
 
 <PrivateRoute>
+	<style>
+		.party {
+			border: 1px solid #ccc;
+			border-radius: 5px;
+			margin-bottom: 1rem;
+			padding: 1rem;
+		}
+		.party-title {
+			font-weight: bold;
+			margin-bottom: 0.5rem;
+		}
+		.candidate {
+			margin-bottom: 0.25rem;
+		}
+	</style>
+
 	<h1>Vote for a Candidate</h1>
 	<form on:submit|preventDefault={handleVoteSubmit}>
-		<fieldset>
-			<legend>Select a candidate:</legend>
-			{#each candidates as candidate (candidate.id)}
-				<div>{candidate.id}</div>
-				<div>
-					<input
-						type="radio"
-						id="candidate-{candidate.id}"
-						name="candidate"
-						value={candidate}
-						bind:group={selectedCandidate}
-					/>
-					<label for="candidate-{candidate.id}">{candidate.name}</label>
-				</div>
-			{/each}
-		</fieldset>
+		{#each parties as party (party.id)}
+			<div class="party">
+				<div class="party-title">{party.name}</div>
+				{#each party.candidates as candidate (candidate.id)}
+					<div class="candidate">
+						<input
+							type="radio"
+							id="candidate-{candidate.id}"
+							name="candidate"
+							value={candidate}
+							bind:group={selectedCandidate}
+						/>
+						<label for="candidate-{candidate.id}">{candidate.name}</label>
+					</div>
+				{/each}
+			</div>
+		{/each}
 		<button type="submit">Submit Vote</button>
 	</form>
 </PrivateRoute>
+
+
+<style>
+	body {
+	  font-family: Arial, sans-serif;
+	  background-color: #f8f8f8;
+	}
+  
+	.container {
+	  width: 100%;
+	  max-width: 800px;
+	  margin: 50px auto;
+	  padding: 30px;
+	  background-color: #ffffff;
+	  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	  border-radius: 4px;
+	}
+  
+	h1 {
+	  text-align: center;
+	  margin-bottom: 25px;
+	}
+  
+	fieldset {
+	  border: 1px solid #ccc;
+	  padding: 20px;
+	  margin-bottom: 20px;
+	}
+  
+	legend {
+	  font-weight: bold;
+	  padding: 0 5px;
+	}
+  
+	div {
+	  margin-bottom: 10px;
+	}
+  
+	button {
+	  background-color: #4CAF50;
+	  color: white;
+	  padding: 10px 20px;
+	  border: none;
+	  border-radius: 4px;
+	  cursor: pointer;
+	  font-size: 16px;
+	}
+  
+	button:hover {
+	  background-color: #45a049;
+	}
+  </style>
+  
